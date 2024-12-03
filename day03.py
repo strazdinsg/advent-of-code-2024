@@ -18,10 +18,7 @@ def get_next_piece(program, enabled):
     switch_command = "don't()" if enabled else "do()"
     index = program.find(switch_command)
     piece = program[:index]
-    if index == -1:
-        program = ""
-    else:
-        program = program[index:]
+    program = program[index:] if index >= 0 else ""
     return piece, program
 
 def find_mul_instructions(code):
