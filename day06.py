@@ -1,5 +1,8 @@
 use_example_input = True
 
+EMPTY = -1
+WALL = -2
+
 UP = 0
 RIGHT = 1
 DOWN = 2
@@ -15,6 +18,7 @@ def main():
     global cols
     global map
     read_input()
+    print_map()
     rows = len(map)
     cols = len(map[0])
     pos = get_guard_position()
@@ -31,7 +35,7 @@ def get_guard_position():
     global map
     for i in range(len(map)):
         for j in range(len(map[i])):
-            if map[i][j] == '^':
+            if map[i][j] == UP:
                 return (i, j, UP)
 
 def is_within_bounds(pos):
@@ -39,7 +43,7 @@ def is_within_bounds(pos):
 
 def mark_location(pos):
     global map
-    map[pos[0]] = map[pos[0]][:pos[1]] + str(pos[2]) + map[pos[0]][pos[1] + 1:]
+    map[pos[0]][pos[1]] = pos[2]
 
 def move(pos):
     next_pos = get_next_pos(pos)
@@ -60,7 +64,7 @@ def get_next_pos(pos):
 
 def is_wall(pos):
     global map
-    return is_within_bounds(pos) and map[pos[0]][pos[1]] == '#'
+    return is_within_bounds(pos) and map[pos[0]][pos[1]] == WALL
 
 def turn(pos):
     return (pos[0], pos[1], (pos[2] + 1) % 4)
@@ -70,7 +74,7 @@ def count_visited():
     visited = 0
     for row in map:
         for cell in row:
-            if cell.isdigit():
+            if cell != EMPTY and cell != WALL:
                 visited += 1
     return visited
 
@@ -100,7 +104,7 @@ def count_loop_obstacles():
 
 def is_dir(pos):
     global map
-    return map[pos[0]][pos[1]] == str(pos[2])
+    return map[pos[0]][pos[1]] == pos[2]
 
 def gets_into_loop(pos):
     global map
@@ -115,6 +119,23 @@ def read_input():
     file_name = "example06.txt" if use_example_input else "input06.txt"
     with open(file_name, "r") as f:
         map = f.read().splitlines()
+    global rows, cols
+    rows = len(map)
+    cols = len(map[0])
+    replace_strings_with_ints()
+
+def replace_strings_with_ints():
+    global map
+    for i in range(rows):
+        row = list(map[i])
+        for j in range(cols):
+            if row[j] == '.':
+                row[j] = EMPTY
+            elif row[j] == '^':
+                row[j] = UP
+            elif row[j] == '#':
+                row[j] = WALL
+        map[i] = row
 
 def print_map():
     global map
