@@ -1,4 +1,4 @@
-use_example_input = True
+use_example_input = False
 
 EMPTY = -1
 WALL = -2
@@ -11,43 +11,51 @@ LEFT = 3
 map = []
 rows = 0
 cols = 0
-map = []
 
 def main():
     global rows
     global cols
-    global map
-    read_input()
-    print_map()
+    map = read_input()
+    # print_map(map)
     rows = len(map)
     cols = len(map[0])
-    pos = get_guard_position()
-    while is_within_bounds(pos):
-        mark_location(pos)
-        pos = move(pos)
-    visited = count_visited()
+    starting_map = copy_map(map)
+    traverse_and_check_loop(map)
+    visited = count_visited(map)
     print(visited)
-    print_map()
-    obstacles = count_loop_obstacles()
+    # print_map(map)
+    obstacles = count_loop_obstacles(starting_map)
     print(obstacles)
 
-def get_guard_position():
-    global map
+def get_guard_position(map):
     for i in range(len(map)):
         for j in range(len(map[i])):
             if map[i][j] == UP:
                 return (i, j, UP)
 
-def is_within_bounds(pos):
-    return pos[0] >= 0 and pos[0] < rows and pos[1] >= 0 and pos[1] < cols
+def copy_map(m):
+    return [row[:] for row in m]
 
-def mark_location(pos):
-    global map
+def traverse_and_check_loop(map):
+    pos = get_guard_position(map)
+    if pos is None:
+        raise Exception("Guard not found")
+    while is_within_bounds(map, pos):
+        mark_location(map, pos)
+        pos = move(map, pos)
+        if (is_dir(map, pos)):
+            return True
+    return False
+
+def is_within_bounds(map, pos):
+    return pos[0] >= 0 and pos[0] < len(map) and pos[1] >= 0 and pos[1] < len(map[0])
+
+def mark_location(map, pos):
     map[pos[0]][pos[1]] = pos[2]
 
-def move(pos):
+def move(map, pos):
     next_pos = get_next_pos(pos)
-    if is_wall(next_pos):
+    if is_wall(map, next_pos):
         return turn(pos)
     else:
         return next_pos
@@ -62,15 +70,13 @@ def get_next_pos(pos):
     elif pos[2] == LEFT:
         return (pos[0], pos[1] - 1, LEFT)
 
-def is_wall(pos):
-    global map
-    return is_within_bounds(pos) and map[pos[0]][pos[1]] == WALL
+def is_wall(map, pos):
+    return is_within_bounds(map, pos) and map[pos[0]][pos[1]] == WALL
 
 def turn(pos):
     return (pos[0], pos[1], (pos[2] + 1) % 4)
 
-def count_visited():
-    global map
+def count_visited(map):
     visited = 0
     for row in map:
         for cell in row:
@@ -78,57 +84,39 @@ def count_visited():
                 visited += 1
     return visited
 
-def count_loop_obstacles():
-    global rows
-    global cols
+def count_loop_obstacles(map):
     obstacles = 0
-    for row in range(rows):
-        for col in range(cols):
-            # Try to place an obstacle on the left
-            if is_dir((row, col, LEFT)) and gets_into_loop((row - 1, col, UP)):
-                print(f"Putting obstacle at ({row}, {col-1})")
-                obstacles += 1
-            # Try to place an obstacle on the bottom
-            if is_dir((row, col, DOWN)) and gets_into_loop((row, col - 1, LEFT)):
-                print(f"Putting obstacle at ({row+1}, {col})")
-                obstacles += 1
-            # Try to place an obstacle on the right
-            if is_dir((row, col, RIGHT)) and gets_into_loop((row + 1, col, DOWN)):
-                print(f"Putting obstacle at ({row}, {col+1})")
-                obstacles += 1
-            # Try to place an obstacle on the top
-            if is_dir((row, col, UP)) and gets_into_loop((row, col + 1, RIGHT)):
-                print(f"Putting obstacle at ({row-1}, {col})")
-                obstacles += 1
+    for row in range(len(map)):
+        print(f"Checking obstacles for row {row}")
+        for col in range(len(map[row])):
+            if map[row][col] == EMPTY:
+                map_copy = copy_map(map)
+                map_copy[row][col] = WALL
+                if traverse_and_check_loop(map_copy):
+                    print(f"Could place obstacle at {row}, {col}")
+                    obstacles += 1
     return obstacles
 
-def is_dir(pos):
-    global map
-    return map[pos[0]][pos[1]] == pos[2]
+def is_dir(map, pos):
+    return is_within_bounds(map, pos) and map[pos[0]][pos[1]] == pos[2]
 
-def gets_into_loop(pos):
-    global map
-    while is_within_bounds(pos):
-        if is_dir(pos):
+def gets_into_loop(map, pos):
+    while is_within_bounds(map, pos):
+        if is_dir(map, pos):
             return True
-        pos = move(pos)
+        pos = move(map, pos)
     return False
 
 def read_input():
-    global map
     file_name = "example06.txt" if use_example_input else "input06.txt"
     with open(file_name, "r") as f:
         map = f.read().splitlines()
-    global rows, cols
-    rows = len(map)
-    cols = len(map[0])
-    replace_strings_with_ints()
+        return replace_strings_with_ints(map)
 
-def replace_strings_with_ints():
-    global map
-    for i in range(rows):
+def replace_strings_with_ints(map):
+    for i in range(len(map)):
         row = list(map[i])
-        for j in range(cols):
+        for j in range(len(row)):
             if row[j] == '.':
                 row[j] = EMPTY
             elif row[j] == '^':
@@ -136,9 +124,9 @@ def replace_strings_with_ints():
             elif row[j] == '#':
                 row[j] = WALL
         map[i] = row
+    return map
 
-def print_map():
-    global map
+def print_map(map):
     for row in map:
         print(row)
 
