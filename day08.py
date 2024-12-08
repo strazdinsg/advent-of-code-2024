@@ -21,9 +21,7 @@ def find_antennas(maze):
             if char != EMPTY:
                 if not char in antennas:
                     antennas[char] = []
-                    antennas[char].append((row, col))
-                else:
-                    antennas[char].append((row, col))
+                antennas[char].append((row, col))
     return antennas
 
 def count_antinodes(maze, antennas, min_harmonics, max_harmonics):
