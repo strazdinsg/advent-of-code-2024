@@ -3,36 +3,69 @@ use_example_input = False
 EMPTY = -1
 
 class TreeNode:
-    def __init__(self, data, child_values):
-        self.data = data
-        self.children = [TreeNode(v, []) for v in child_values]
-    def split_into_two(self, value1, value2):
-        self.data = EMPTY
-        self.children = [TreeNode(value1, []), TreeNode(value2, [])]
-    def count(self):
-        count = 1 if self.data != EMPTY else 0
-        for c in self.children:
-            count += c.count()
+    def __init__(self, value: int):
+        self.value = value
+        self.cached_counts = dict()
+        self.children = []
+    
+    def add_child(self, child_node):
+        self.children.append(child_node)
+    
+    def __str__(self):
+        return f"{self.value}: {' '.join([str(child.value) for child in self.children])}"
+    
+    def count_visited(self, steps: int):
+        if steps == 0:
+            return 1
+        if steps in self.cached_counts:
+            return self.cached_counts[steps]
+        count = 0
+        for child in self.children:
+            count += child.count_visited(steps - 1)        
+        self.cached_counts[steps] = count
         return count
-    def debug_print(self):    
-        print(self.get_debug_string())    
-    def get_debug_string(self):
-        if self.data != EMPTY:
-            return str(self.data)
-        else:
-            return ' '.join([c.get_debug_string() for c in self.children])
-    def blink(self):
-        if self.data != EMPTY:
-            if self.data == 0:
-                self.data = 1
-            elif even_digits(self.data):
-                p1, p2 = get_parts(self.data)
-                self.split_into_two(p1, p2)
-            else:
-                self.data *= 2024
-        else:
-            for c in self.children:
-                c.blink()
+    
+def main():
+    stones = read_input()
+    graph = build_graph(stones)
+    part1 = graph.count_visited(25 + 1)
+    print(part1)
+    part2 = graph.count_visited(75 + 1)
+    print(part2)
+
+def build_graph(stones: list[int]):
+    to_visit: list[TreeNode] = []
+    nodes: dict[int:TreeNode] = dict()
+    graph = TreeNode(EMPTY)
+    for stone in stones:
+        v = TreeNode(stone)
+        graph.add_child(v)
+        to_visit.append(v)
+    while to_visit:
+        v = to_visit.pop()
+        next_values = blink(v.value)
+        for n in next_values:
+            if not n in nodes:
+                nodes[n] = TreeNode(n)
+                to_visit.append(nodes[n])
+            child = nodes[n]
+            v.add_child(child)
+        nodes[v.value] = v
+    return graph
+
+def blink(stone: int):
+    if stone == 0:
+        return [1]
+    elif even_digits(stone):
+        return get_parts(stone)
+    else:
+        return [stone * 2024]
+
+def read_input():
+    file_name = "example11.txt" if use_example_input else "input11.txt"
+    with open(file_name, "r") as f:
+        return list(map(int, f.readline().split()))
+
 
 def even_digits(stone):
     return len(str(stone)) % 2 == 0
@@ -40,34 +73,7 @@ def even_digits(stone):
 def get_parts(value):
     s = str(value)
     half = len(s) // 2
-    return int(s[:half]), int(s[half:])
-
-
-def main():
-    stones = read_input()
-    stones.debug_print()
-    keep_blinking(stones, 25)
-    print("Part 1:", stones.count())
-    print("Part 2 is too slow, need a different approach :(")
-
-
-def keep_blinking(stones, count):
-    i = 0
-    while i < count:
-        stones.blink()
-        i += 1
-        # stones.debug_print()
-        # print(stones.count())
-        # print(i, "steps done")
-
-
-def read_input():
-    file_name = "example11.txt" if use_example_input else "input11.txt"
-    with open(file_name, "r") as f:
-        return TreeNode(EMPTY, list(map(int, f.readline().split())))
-
-
-
+    return [int(s[:half]), int(s[half:])]
 
 if __name__ == "__main__":
     main()
