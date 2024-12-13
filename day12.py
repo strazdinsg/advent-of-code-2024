@@ -78,28 +78,28 @@ class Region:
     def get_side_count(self):
         sides = 0
         pos = self.top_left
-        dir = RIGHT
+        d = RIGHT
         while True:
-            pos = self.find_last_pos_on_contour(pos, dir)
+            pos = self.find_last_pos_on_contour(pos, d)
             sides += 1
-            if self.has_outside_plot(pos, dir):
-                dir = turn_counter_clockwise(dir)
-                pos = get_next_pos(pos, dir)
+            if self.has_outside_plot(pos, d):
+                d = turn_counter_clockwise(d)
+                pos = get_next_pos(pos, d)
             else:
-                dir = turn_clockwise(dir)
-            if pos == self.top_left and dir == RIGHT:
+                d = turn_clockwise(d)
+            if pos == self.top_left and d == RIGHT:
                 break
         return sides
 
-    def find_last_pos_on_contour(self, pos, dir):
-        next = get_next_pos(pos, dir)
-        while next in self.plots and not self.has_outside_plot(pos, dir):
+    def find_last_pos_on_contour(self, pos, d):
+        next = get_next_pos(pos, d)
+        while next in self.plots and not self.has_outside_plot(pos, d):
             pos = next
-            next = get_next_pos(pos, dir) 
+            next = get_next_pos(pos, d)
         return pos
     
-    def has_outside_plot(self, pos, dir):
-        outside = get_outside_pos(pos, dir)
+    def has_outside_plot(self, pos, d):
+        outside = get_outside_pos(pos, d)
         return outside in self.plots
 
 
@@ -108,7 +108,7 @@ def find_regions(garden):
     regions = []
     for i in range(len(garden)):
         for j in range(len(garden[0])):
-            if (garden[i][j] != VISITED):
+            if garden[i][j] != VISITED:
                 regions.append(find_region(garden, i, j))
     return regions
 
@@ -124,10 +124,10 @@ def find_region(garden, i, j):
         fences = set()
         for direction in DIRECTIONS:
             d = DIRECTIONS[direction]
-            next = (pos[0] + d[0], pos[1] + d[1])
-            if is_same_region(garden, next, c):
-                if next not in visited and next not in to_visit:
-                    to_visit.append(next)
+            next_pos = (pos[0] + d[0], pos[1] + d[1])
+            if is_same_region(garden, next_pos, c):
+                if next_pos not in visited and next_pos not in to_visit:
+                    to_visit.append(next_pos)
             else:
                 fences.add(direction)
         region.add_plot(pos, fences)
@@ -152,12 +152,12 @@ def turn_clockwise(dir):
 
 def get_next_pos(pos, dir):
     next_dir = DIRECTIONS[dir]
-    return (pos[0] + next_dir[0], pos[1] + next_dir[1]) 
+    return pos[0] + next_dir[0], pos[1] + next_dir[1]
 
 
-def get_outside_pos(pos: tuple[int, int], dir: int):
-    outside_dir = OUTSIDE[dir]
-    return (pos[0] + outside_dir[0], pos[1] + outside_dir[1])
+def get_outside_pos(pos: tuple[int, int], d: int):
+    outside_dir = OUTSIDE[d]
+    return pos[0] + outside_dir[0], pos[1] + outside_dir[1]
 
 
 if __name__ == "__main__":
