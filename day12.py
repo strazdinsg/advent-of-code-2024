@@ -92,10 +92,10 @@ class Region:
         return sides
 
     def find_last_pos_on_contour(self, pos, d):
-        next = get_next_pos(pos, d)
-        while next in self.plots and not self.has_outside_plot(pos, d):
-            pos = next
-            next = get_next_pos(pos, d)
+        next_pos = get_next_pos(pos, d)
+        while next_pos in self.plots and not self.has_outside_plot(pos, d):
+            pos = next_pos
+            next_pos = get_next_pos(pos, d)
         return pos
     
     def has_outside_plot(self, pos, d):
@@ -144,14 +144,14 @@ def print_garden(garden):
     for line in garden:
         print("".join(line))
 
-def turn_counter_clockwise(dir):
-    return (dir - 1) % 4
+def turn_counter_clockwise(d):
+    return (d - 1) % 4
 
-def turn_clockwise(dir):
-    return (dir + 1) % 4
+def turn_clockwise(d):
+    return (d + 1) % 4
 
-def get_next_pos(pos, dir):
-    next_dir = DIRECTIONS[dir]
+def get_next_pos(pos, d):
+    next_dir = DIRECTIONS[d]
     return pos[0] + next_dir[0], pos[1] + next_dir[1]
 
 
