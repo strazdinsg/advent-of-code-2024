@@ -14,11 +14,11 @@ with open(file_name, "r") as f:
 sorted_a = sorted(a)
 sorted_b = sorted(b)
 
-sum = 0
+s = 0
 for i in range(len(sorted_a)):
-    sum += abs(sorted_a[i] - sorted_b[i])
+    s += abs(sorted_a[i] - sorted_b[i])
 
-print("Answer for part 1: %d" % sum)
+print("Answer for part 1: %d" % s)
 
 bag_b = Counter(b)
 
