@@ -28,16 +28,55 @@ ARROWS = {
 }
 
 
+class KeyPad:
+    def __init__(self, keypad):
+        self.keypad = keypad
+        self.empty_pos = self.keypad[EMPTY]
+        self.key_map = self.find_shortest()
+
+    def find_shortest(self):
+        key_map = {}
+        for from_key in self.keypad:
+            if from_key == EMPTY:
+                continue
+            key_map[from_key] = {}
+            for to_key in self.keypad:
+                if to_key == EMPTY:
+                    continue
+                if from_key != to_key:
+                    key_map[from_key][to_key] = self.find_shortest_path(from_key, to_key)
+                else:
+                    key_map[from_key][to_key] = ""
+        return key_map
+
+    def find_shortest_path(self, from_key, to_key):
+        from_pos = self.keypad[from_key]
+        to_pos = self.keypad[to_key]
+        dy = to_pos[0] - from_pos[0]
+        dx = to_pos[1] - from_pos[1]
+        dxs = ">" if dx > 0 else "<"
+        dys = "v" if dy > 0 else "^"
+        vdx = dxs * abs(dx)
+        vdy = dys * abs(dy)
+        if self.empty_pos[0] == from_pos[0]:
+            return vdy + vdx
+        else:
+            return vdx + vdy
+
+    def get_shortest(self, from_key, to_key):
+        return self.key_map[from_key][to_key]
+
+
 def main():
     input_file_name = "example21.txt" if use_example_input else "input21.txt"
     codes = read_input(input_file_name)
-    numpad_map = find_shortest(NUMPAD)
-    arrow_map = find_shortest(ARROWS)
+    numpad_map = KeyPad(NUMPAD)
+    arrow_map = KeyPad(ARROWS)
     command_chain = [numpad_map, arrow_map, arrow_map]
     comp_sum = 0
     for code in codes:
+        print(f"{code}:")
         s = get_multi_step_sequence(code, command_chain, "A")
-        print(f"{code}: {s}")
         comp_sum += calculate_complexity(s, code)
     print(f"Complexity sum: {comp_sum}")
 
@@ -52,52 +91,21 @@ def read_input(input_file_name):
         return codes
 
 
-def find_shortest(keypad):
-    key_map = {}
-    for from_key in keypad:
-        if from_key == EMPTY:
-            continue
-        key_map[from_key] = {}
-        for to_key in keypad:
-            if to_key == EMPTY:
-                continue
-            if from_key != to_key:
-                key_map[from_key][to_key] = find_shortest_path(keypad, from_key, to_key)
-            else:
-                key_map[from_key][to_key] = ""
-    return key_map
-
-
-def find_shortest_path(keymap, from_key, to_key):
-    from_pos = keymap[from_key]
-    to_pos = keymap[to_key]
-    dy = to_pos[0] - from_pos[0]
-    dx = to_pos[1] - from_pos[1]
-    dxs = ">" if dx > 0 else "<"
-    dys = "v" if dy > 0 else "^"
-    vdx = dxs * abs(dx)
-    vdy = dys * abs(dy)
-    empty_pos = keymap[EMPTY]
-    if empty_pos[0] == from_pos[0]:
-        return vdy + vdx
-    else:
-        return vdx + vdy
-
-
 def get_multi_step_sequence(code, command_chain, start_key):
     sequence = code
-    for keymap in command_chain:
-        sequence = get_sequence(sequence, keymap, start_key)
+    for keypad in command_chain:
+        sequence = get_sequence(sequence, keypad, start_key)
+        print(f"    {sequence}")
     return sequence
 
 
-def get_sequence(code, keymap, start_key):
+def get_sequence(code, keypad, start_key):
     code = code
     prev_key = start_key
     sequence = ""
     for i in range(len(code)):
         key = code[i]
-        sequence += keymap[prev_key][key]
+        sequence += keypad.get_shortest(prev_key, key)
         sequence += APPROVE
         prev_key = key
     return sequence
