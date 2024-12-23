@@ -1,4 +1,5 @@
 from collections import deque
+import time
 
 use_example_input = False
 
@@ -83,4 +84,7 @@ def get_best_combo(secrets):
 
 
 if __name__ == "__main__":
+    start_time = time.time()
     main()
+    end_time = time.time()
+    print(f"Execution time: {(end_time - start_time):.3f} seconds")
