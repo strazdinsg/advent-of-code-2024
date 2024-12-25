@@ -1,31 +1,34 @@
+import re
+
 use_example_input = False
 
 EMPTY = "."
 APPROVE = "A"
 
-NUMPAD = {
-    "7": (0, 0),
-    "8": (0, 1),
-    "9": (0, 2),
-    "4": (1, 0),
-    "5": (1, 1),
-    "6": (1, 2),
-    "1": (2, 0),
-    "2": (2, 1),
-    "3": (2, 2),
-    "0": (3, 1),
-    APPROVE: (3, 2),
-    EMPTY: (3, 0),
-}
-
-ARROWS = {
-    EMPTY: (0, 0),
-    "^": (0, 1),
-    APPROVE: (0, 2),
-    "<": (1, 0),
-    "v": (1, 1),
-    ">": (1, 2),
-}
+# NUMPAD = {
+#     "7": (0, 0),
+#     "8": (0, 1),
+#     "9": (0, 2),
+#     "4": (1, 0),
+#     "5": (1, 1),
+#     "6": (1, 2),
+#     "1": (2, 0),
+#     "2": (2, 1),
+#     "3": (2, 2),
+#     "0": (3, 1),
+#     APPROVE: (3, 2),
+#     EMPTY: (3, 0),
+# }
+#
+# ARROWS = {
+#     EMPTY: (0, 0),
+#     "^": (0, 1),
+#     APPROVE: (0, 2),
+#     "<": (1, 0),
+#     "v": (1, 1),
+#     ">": (1, 2),
+# }
+NUMKEYS = "0123456789A"
 
 
 class KeyPad:
@@ -70,9 +73,14 @@ class KeyPad:
 def main():
     input_file_name = "example21.txt" if use_example_input else "input21.txt"
     codes = read_input(input_file_name)
-    numpad_map = KeyPad(NUMPAD)
-    arrow_map = KeyPad(ARROWS)
-    command_chain = [numpad_map, arrow_map, arrow_map]
+    numpad, arrows = read_key_mappings("day21.dict")
+
+    # numpad_map = KeyPad(NUMPAD)
+    # arrow_map = KeyPad(ARROWS)
+    # command_chain = [numpad_map, arrow_map, arrow_map]
+    command_chain = [numpad, arrows, arrows]
+    chains = find_shortest_chains(command_chain)
+
     comp_sum = 0
     for code in codes:
         print(f"{code}:")
@@ -116,6 +124,63 @@ def calculate_complexity(sequence, code):
     code_value = int(code[:-1])
     print(f"    {char_count}: {code_value}")
     return char_count * code_value
+
+
+def find_shortest_chains(command_chain):
+    global NUMKEYS
+    shortest_chains = {}
+    for from_key in NUMKEYS:
+        shortest_chains[from_key] = {}
+        for to_key in NUMKEYS:
+            c = get_shortest_chain(from_key, to_key, command_chain)
+            shortest_chains[from_key][to_key] = c
+            print(f"{from_key} -> {to_key}: {c}")
+    return shortest_chains
+
+
+def get_shortest_chain(from_key, to_key, command_chain):
+    numpad = command_chain[0]
+    numpad_chains = numpad[from_key][to_key]
+    all_chains = get_all_chains(numpad_chains, command_chain[1:])
+    # Return item from all_chains with the shortest length
+    shortest_chain = min(all_chains, key=len)
+    return shortest_chain
+
+
+def get_all_chains(prev_chains, command_chain):
+    if len(command_chain) == 0:
+        return prev_chains
+    chains = []
+    keypad = command_chain[0]
+    prev_char = APPROVE
+    for pc in prev_chains:
+        chain = ""
+        for char in pc:
+            possible_chains = keypad[prev_char][char]
+
+        chains.append(chain)
+    return get_all_chains(chains, command_chain[1:])
+
+
+def read_key_mappings(filename):
+    with open(filename, "r") as f:
+        numpad = read_key_mapping(f)
+        arrows = read_key_mapping(f)
+        return numpad, arrows
+
+
+def read_key_mapping(f):
+    line = f.readline().strip()
+    mapping = {}
+    while line != "":
+        change, sequence_list = line.split(":")
+        from_key, to_key = change.split("-")
+        sequences = sequence_list.split(",")
+        if from_key not in mapping:
+            mapping[from_key] = {}
+        mapping[from_key][to_key] = sequences
+        line = f.readline().strip()
+    return mapping
 
 
 if __name__ == "__main__":
