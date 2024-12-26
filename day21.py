@@ -1,73 +1,11 @@
-import re
+from collections import deque
 
 use_example_input = False
 
 EMPTY = "."
 APPROVE = "A"
 
-# NUMPAD = {
-#     "7": (0, 0),
-#     "8": (0, 1),
-#     "9": (0, 2),
-#     "4": (1, 0),
-#     "5": (1, 1),
-#     "6": (1, 2),
-#     "1": (2, 0),
-#     "2": (2, 1),
-#     "3": (2, 2),
-#     "0": (3, 1),
-#     APPROVE: (3, 2),
-#     EMPTY: (3, 0),
-# }
-#
-# ARROWS = {
-#     EMPTY: (0, 0),
-#     "^": (0, 1),
-#     APPROVE: (0, 2),
-#     "<": (1, 0),
-#     "v": (1, 1),
-#     ">": (1, 2),
-# }
 NUMKEYS = "0123456789A"
-
-
-class KeyPad:
-    def __init__(self, keypad):
-        self.keypad = keypad
-        self.empty_pos = self.keypad[EMPTY]
-        self.key_map = self.find_shortest()
-
-    def find_shortest(self):
-        key_map = {}
-        for from_key in self.keypad:
-            if from_key == EMPTY:
-                continue
-            key_map[from_key] = {}
-            for to_key in self.keypad:
-                if to_key == EMPTY:
-                    continue
-                if from_key != to_key:
-                    key_map[from_key][to_key] = self.find_shortest_path(from_key, to_key)
-                else:
-                    key_map[from_key][to_key] = ""
-        return key_map
-
-    def find_shortest_path(self, from_key, to_key):
-        from_pos = self.keypad[from_key]
-        to_pos = self.keypad[to_key]
-        dy = to_pos[0] - from_pos[0]
-        dx = to_pos[1] - from_pos[1]
-        dxs = ">" if dx > 0 else "<"
-        dys = "v" if dy > 0 else "^"
-        vdx = dxs * abs(dx)
-        vdy = dys * abs(dy)
-        if self.empty_pos[0] == from_pos[0]:
-            return vdy + vdx
-        else:
-            return vdx + vdy
-
-    def get_shortest(self, from_key, to_key):
-        return self.key_map[from_key][to_key]
 
 
 def main():
@@ -83,8 +21,8 @@ def main():
 
     comp_sum = 0
     for code in codes:
-        print(f"{code}:")
-        s = get_multi_step_sequence(code, command_chain, "A")
+        s = get_sequence(code, chains, "A")
+        print(f"{code}: [{len(s)}] {s}")
         comp_sum += calculate_complexity(s, code)
     print(f"Complexity sum: {comp_sum}")
 
@@ -99,22 +37,12 @@ def read_input(input_file_name):
         return codes
 
 
-def get_multi_step_sequence(code, command_chain, start_key):
-    sequence = code
-    for keypad in command_chain:
-        sequence = get_sequence(sequence, keypad, start_key)
-        print(f"    {sequence}")
-    return sequence
-
-
-def get_sequence(code, keypad, start_key):
-    code = code
+def get_sequence(code, shortest_chains: dict[str, dict[str, str]], start_key):
     prev_key = start_key
     sequence = ""
     for i in range(len(code)):
         key = code[i]
-        sequence += keypad.get_shortest(prev_key, key)
-        sequence += APPROVE
+        sequence += shortest_chains[prev_key][key]
         prev_key = key
     return sequence
 
@@ -133,8 +61,8 @@ def find_shortest_chains(command_chain):
         shortest_chains[from_key] = {}
         for to_key in NUMKEYS:
             c = get_shortest_chain(from_key, to_key, command_chain)
-            shortest_chains[from_key][to_key] = c
             print(f"{from_key} -> {to_key}: {c}")
+            shortest_chains[from_key][to_key] = c
     return shortest_chains
 
 
@@ -144,6 +72,8 @@ def get_shortest_chain(from_key, to_key, command_chain):
     all_chains = get_all_chains(numpad_chains, command_chain[1:])
     # Return item from all_chains with the shortest length
     shortest_chain = min(all_chains, key=len)
+    longest_chain = max(all_chains, key=len)
+    print(f"  Chain {from_key}->{to_key}: from {len(shortest_chain)} to {len(longest_chain)}")
     return shortest_chain
 
 
@@ -152,13 +82,20 @@ def get_all_chains(prev_chains, command_chain):
         return prev_chains
     chains = []
     keypad = command_chain[0]
-    prev_char = APPROVE
+    to_visit = deque([])
     for pc in prev_chains:
-        chain = ""
-        for char in pc:
-            possible_chains = keypad[prev_char][char]
-
-        chains.append(chain)
+        to_visit.append((APPROVE + pc, ""))
+    while to_visit:
+        prev_chain, processed = to_visit.popleft()
+        prev_char = prev_chain[0]
+        char = prev_chain[1]
+        possible_chains = keypad[prev_char][char]
+        if len(prev_chain) == 2:
+            for chain in possible_chains:
+                chains.append(processed + chain)
+        else:
+            for chain in possible_chains:
+                to_visit.append((prev_chain[1:], processed + chain))
     return get_all_chains(chains, command_chain[1:])
 
 
