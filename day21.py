@@ -1,6 +1,6 @@
 from collections import deque
 
-use_example_input = False
+use_example_input = True
 
 EMPTY = "."
 APPROVE = "A"
@@ -13,18 +13,15 @@ def main():
     codes = read_input(input_file_name)
     numpad, arrows = read_key_mappings("day21.dict")
 
-    # numpad_map = KeyPad(NUMPAD)
-    # arrow_map = KeyPad(ARROWS)
-    # command_chain = [numpad_map, arrow_map, arrow_map]
-    command_chain = [numpad, arrows, arrows]
-    chains = find_shortest_chains(command_chain)
+    part(1, 2, numpad, arrows, codes)
+    # part(2, 25, numpad, arrows, codes)
 
-    comp_sum = 0
-    for code in codes:
-        s = get_sequence(code, chains, "A")
-        print(f"{code}: [{len(s)}] {s}")
-        comp_sum += calculate_complexity(s, code)
-    print(f"Complexity sum: {comp_sum}")
+
+def part(nr, num_arrow_keypads, numpad, arrows, codes):
+    command_chain = create_command_chain(num_arrow_keypads, numpad, arrows)
+    chains = find_shortest_chains(command_chain)
+    comp_sum = sum_complexities(chains, codes)
+    print(f"Part {nr}: complexity sum = {comp_sum}")
 
 
 def read_input(input_file_name):
@@ -59,9 +56,9 @@ def find_shortest_chains(command_chain):
     shortest_chains = {}
     for from_key in NUMKEYS:
         shortest_chains[from_key] = {}
+        print(f"    Generate chains for {from_key}")
         for to_key in NUMKEYS:
             c = get_shortest_chain(from_key, to_key, command_chain)
-            print(f"{from_key} -> {to_key}: {c}")
             shortest_chains[from_key][to_key] = c
     return shortest_chains
 
@@ -72,19 +69,21 @@ def get_shortest_chain(from_key, to_key, command_chain):
     all_chains = get_all_chains(numpad_chains, command_chain[1:])
     # Return item from all_chains with the shortest length
     shortest_chain = min(all_chains, key=len)
-    longest_chain = max(all_chains, key=len)
-    print(f"  Chain {from_key}->{to_key}: from {len(shortest_chain)} to {len(longest_chain)}")
     return shortest_chain
 
 
 def get_all_chains(prev_chains, command_chain):
     if len(command_chain) == 0:
         return prev_chains
+    min_len = len(min(prev_chains, key=len))
     chains = []
     keypad = command_chain[0]
     to_visit = deque([])
     for pc in prev_chains:
-        to_visit.append((APPROVE + pc, ""))
+        if len(pc) == min_len:
+            to_visit.append((APPROVE + pc, ""))
+    if len(prev_chains) > len(to_visit):
+        print(f"Processing {len(to_visit)} from previous {len(prev_chains)} prev chains")
     while to_visit:
         prev_chain, processed = to_visit.popleft()
         prev_char = prev_chain[0]
@@ -118,6 +117,22 @@ def read_key_mapping(f):
         mapping[from_key][to_key] = sequences
         line = f.readline().strip()
     return mapping
+
+
+def create_command_chain(num_arrow_keypads, numpad, arrows):
+    command_chain = [numpad]
+    for i in range(num_arrow_keypads):
+        command_chain.append(arrows)
+    return command_chain
+
+
+def sum_complexities(chains, codes):
+    comp_sum = 0
+    for code in codes:
+        s = get_sequence(code, chains, "A")
+        print(f"{code}: [{len(s)}] {s}")
+        comp_sum += calculate_complexity(s, code)
+    return comp_sum
 
 
 if __name__ == "__main__":
